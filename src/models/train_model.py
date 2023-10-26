@@ -60,12 +60,12 @@ class train_model():
             trainloader:torch.utils.data.dataloader.DataLoader,
             testloader:torch.utils.data.dataloader.DataLoader,
             epochs:int = 4,
-            verbose =False) -> None:
+            verbose:bool = False) -> None:
         
         for t in range(epochs):
             print(f"Epoch {t+1}\n-------------------------------")
-            self.train(trainloader, self.model, self.loss_func, self.optimizer, verbose=verbose)
-            self.test(testloader,  self.model, self.loss_func, verbose=verbose)
+            self.train(trainloader, verbose)
+            self.test(testloader, verbose)
         print("Done!")
 
     def save_state(self,path=".../models",name = "model") -> None:
