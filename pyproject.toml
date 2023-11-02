@@ -4,7 +4,7 @@ version = "0.0.1"
 description = ""
 authors = ["Anton Zotov <antzotik@gmail.com>"]
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "CIFAR_CNN"}]
 
 [tool.poetry.dependencies]
 
@@ -14,6 +14,7 @@ torch = {version = "^2.1.0+cu118", source = "pytorch"}
 torchvision = {version = "^0.16.0+cu118", source = "pytorch"}
 matplotlib = "^3.8.0"
 wandb = "^0.15.12"
+lightning = "^2.1.0"
 
 
 [tool.poetry.dev-dependencies]

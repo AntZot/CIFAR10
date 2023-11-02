@@ -1,6 +1,8 @@
-data/raw/c*
-
-
+CIFAR_CNN/datasets/raw/c*
+nootebooks/wandb
+nootebooks/lightning_logs
+wandb
+lightning_logs
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

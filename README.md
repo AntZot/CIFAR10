@@ -20,3 +20,7 @@ cd CIFAR10
 ```bash
 poetry install
 ```
+### Lets start train model 
+```bash
+python -m models.train_model
+```
