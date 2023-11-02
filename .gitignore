@@ -1,4 +1,4 @@
-CIFAR_CNN/datasets/raw/c*
+/datasets/raw/c*
 nootebooks/wandb
 nootebooks/lightning_logs
 wandb

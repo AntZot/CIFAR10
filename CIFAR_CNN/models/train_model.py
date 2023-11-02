@@ -39,11 +39,6 @@ class ImageCallback(L.Callback):
                 caption=captions)
 
 
-
-
-data_module = CIFAR10DataModule("/CIFAR10/CIFAR_CNN/datasets/raw")
-model_module = CIFAR10Model(num_classes=data_module.num_classes,lr=2e-3)
-
 callbacks =[
     LearningRateMonitor(logging_interval='step'),
     ImageCallback()  
@@ -51,7 +46,12 @@ callbacks =[
 
    
 def train(epoch: int = 45,
-          device: str = "auto") -> None:
+          device: str = "auto",
+          lr: float = 2e-3,
+          path: str  = "/CIFAR10/datasets/raw") -> None:
+
+    data_module = CIFAR10DataModule(path)
+    model_module = CIFAR10Model(num_classes=data_module.num_classes,lr=lr)
     try:
         trainer = L.Trainer(
             accelerator=ACCELERATOR,
