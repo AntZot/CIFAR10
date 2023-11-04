@@ -1,6 +1,6 @@
 from typing import List, Union
-from CIFAR_CNN.data.data_loader import CIFAR10DataModule
-from CIFAR_CNN.models.cnn import CIFAR10Model
+from cifar_cnn.data.data_loader import CIFAR10DataModule
+from cifar_cnn.models.cnn import CIFAR10Model
 import torch
 import lightning as L
 from lightning.pytorch.loggers import WandbLogger

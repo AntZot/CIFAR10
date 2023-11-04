@@ -1,5 +1,6 @@
 from typing import Tuple
 from torch import nn
+from cifar_cnn.models.ResSKBlock import ResSKBlock
 import torch
 import lightning as L
 from torchmetrics.functional import accuracy, auroc
@@ -14,22 +15,20 @@ class CIFAR10Model(L.LightningModule):
         self.learning_rate = lr
         self.num_classes = num_classes
         self.cnn_relu_seq = nn.Sequential(
-            nn.Conv2d(3,8,5),
+            nn.Conv2d(3,16,5),
             nn.ReLU(),
-            nn.MaxPool2d(2,2),
-            nn.Conv2d(8,15,5),
+            ResSKBlock(in_channels=16,out_channels=16*2,groups = 4),
             nn.ReLU(),
-            nn.MaxPool2d(2,2)
         )
 
         self.lin_layer_seq = nn.Sequential(
-            nn.Linear(15*5*5,188),
+            nn.Linear(32*28*28,12544),
             nn.ReLU(),
-            nn.Linear(188,94),
+            nn.Linear(12544,6272),
             nn.ReLU(),
-            nn.Linear(94,47),
+            nn.Linear(6272,784),
             nn.ReLU(),
-            nn.Linear(47,10)
+            nn.Linear(784,10)
         )
 
     def forward(self,x):
@@ -48,6 +47,8 @@ class CIFAR10Model(L.LightningModule):
         """
         rocauc = auroc(preds, y, task="multiclass",num_classes=self.num_classes)
         self.log("train_rocauc", rocauc, prog_bar=True)
+        acc = accuracy(preds, y, task="multiclass",num_classes=self.num_classes)
+        self.log("train_accuracy", acc, prog_bar=True)
         return {'loss': loss, 'prediction': preds}
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx):
@@ -58,6 +59,8 @@ class CIFAR10Model(L.LightningModule):
         metrics
         """
         rocauc = auroc(logits,y,task="multiclass",num_classes=self.num_classes)
+        acc = accuracy(logits, y, task="multiclass",num_classes=self.num_classes)
+        self.log("val_accuracy", acc, prog_bar=True)
         self.log("val_rocauc",rocauc,prog_bar=True)
         self.log("val_loss", loss, prog_bar=True)
 
@@ -70,6 +73,8 @@ class CIFAR10Model(L.LightningModule):
         metrics
         """
         rocauc = auroc(logits,y,task="multiclass",num_classes=self.num_classes)
+        acc = accuracy(logits, y, task="multiclass",num_classes=self.num_classes)
+        self.log("test_accuracy", acc, prog_bar=True)
         self.log("test_rocauc",rocauc,prog_bar=True)
         self.log("test_loss", test_loss, prog_bar=True)
         
