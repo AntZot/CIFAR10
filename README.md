@@ -23,5 +23,5 @@ poetry install
 ```
 ### Lets start train model 
 ```bash
-python -m CIFAR_CNN.models.train_model
+python -m cifar_cnn.train.train_model
 ```

@@ -67,9 +67,8 @@ class SKConv(nn.Module):
             nn.ReLU()
         )
         self.fc_attn = nn.Linear(in_features=d*1,
-                                 out_features=self.M * self.out_channels,
-                                 bias=False)
-        self.softmax = nn.Softmax(dim=2)
+                                 out_features=self.M * self.out_channels)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

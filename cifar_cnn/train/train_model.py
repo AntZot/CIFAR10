@@ -8,7 +8,10 @@ from lightning.pytorch.callbacks import LearningRateMonitor
 import wandb
 
 ACCELERATOR = "gpu" if torch.cuda.is_available() else "cpu"
-LOGGER = WandbLogger(log_model=True)
+CONF = {
+    "architecture": "resnet", 
+    "batch_size": 256
+    }
 
 
 class ImageCallback(L.Callback):
@@ -45,13 +48,16 @@ callbacks =[
 ]
 
    
-def train(epoch: int = 45,
+def train(epoch: int = 10,
           device: str = "auto",
           lr: float = 2e-3,
           path: str  = "/CIFAR10/datasets/raw") -> None:
 
     data_module = CIFAR10DataModule(path)
     model_module = CIFAR10Model(num_classes=data_module.num_classes,lr=lr)
+    
+    LOGGER = WandbLogger(log_model=True, name=f"{CONF['architecture']}-lr({lr})-epoch({epoch})")
+    LOGGER.experiment.config.update(CONF)
     try:
         trainer = L.Trainer(
             accelerator=ACCELERATOR,
@@ -71,5 +77,5 @@ def train(epoch: int = 45,
 
 
 if __name__ == "__main__":
-    train()
+    train(epoch=8,lr=1e-5)
         
