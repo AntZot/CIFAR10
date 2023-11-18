@@ -7,7 +7,7 @@ import lightning as L
 
 
 PATH_DATASETS = os.environ.get("PATH_DATASETS", ".")
-BATCH_SIZE = 256 if torch.cuda.is_available() else 64
+BATCH_SIZE = 20 if torch.cuda.is_available() else 10
 
 
 class CIFAR10DataModule(L.LightningModule):
