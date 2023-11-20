@@ -15,7 +15,9 @@ class ImagePathces(nn.Module):
 
         emb_dim = patch_size * patch_size * in_ch
         self.cls_token = nn.Parameter(torch.randn(1,1,emb_dim))
+
         self.pos_emb = nn.Parameter(torch.randn(1,1+(img_size//patch_size)**2,emb_dim))
+        
         self.patches = nn.Conv2d(in_ch,emb_dim, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x):
@@ -31,9 +33,8 @@ class ImagePathces(nn.Module):
         #cls_token = self.cls_token.repeat((b,1,1))
         cls_token = repeat(self.cls_token,"() s e -> b s e",b=b)
 
-        x = torch.concat((x, cls_token),dim=1)
-
-        return self.pos_emb + x
+        x = torch.concat((cls_token, x),dim=1)
+        return x + self.pos_emb 
 
 
 class MLP(nn.Module):
@@ -62,19 +63,19 @@ class Attention(nn.Module):
 
         self.qkv = nn.Linear(dim,dim*3,bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
-        self.out_drop = nn.Dropout(out_drop)
         self.out_lin = nn.Linear(dim,dim)
+        self.out_drop = nn.Dropout(out_drop)
 
     def forward(self,x):
-        x = self.attn_drop(self.qkv(x))
+        x = self.qkv(x)
         b, e, _ = x.shape
         # b e (q k v)
         x = x.reshape((b,3,self.num_heads,e,-1))
         # b qkv heads e s 
         
-        att = F.log_softmax((x[:,0] @ x[:,1].transpose(2,3))*self.scale,dim=3)
+        att = F.softmax((x[:,0] @ x[:,1].transpose(2,3))*self.scale, dim=2)
 
-        att = att @ x[:,2]
+        att = self.attn_drop(att @ x[:,2])
         
         #out = out.reshape(b,e,-1)
         att = rearrange(att, "b h n e -> b n (h e)")
@@ -87,20 +88,23 @@ class Attention(nn.Module):
 class Block(nn.Module):
     def __init__(self, dim, qkv_bias: bool = False, num_heads:int = 8, mlp_ratio:int = 4, drop_rate: float = 0.) -> None:
         super().__init__()
-        self.att = Attention(dim,num_heads=num_heads,qkv_bias=qkv_bias)
+        self.att = Attention(dim,num_heads=num_heads,qkv_bias=qkv_bias,attn_drop=drop_rate,out_drop=drop_rate)
 
         self.att_norm = nn.LayerNorm(dim)
+
+        self.drop = nn.Dropout(drop_rate)
 
         self.mlp = MLP(dim,dim*mlp_ratio,dim)
         
         self.mlp_norm = nn.LayerNorm(dim)
+        
         
 
     def forward(self, x):
         att = self.att(x)
         att_out = self.att_norm(x + att)
 
-        mlp = self.mlp(att_out)
+        mlp = self.drop(self.mlp(att_out))
         mlp_out = self.mlp_norm(x + mlp)
         return mlp_out
 
@@ -119,15 +123,13 @@ class Encoder(nn.Module):
         return x
     
 
-
-BATCH_SIZE = 20 if torch.cuda.is_available() else 10
-
+#BATCH_SIZE = 48 if torch.cuda.is_available() else 16
 
 class ViT(L.LightningModule):
     def __init__(self, img_size: int, patch_size: int, num_classes: int, 
                  in_ch: int = 3, depth: int=6, num_heads: int = 8, 
                  mlp_ratio: int = 4, qkv_bias=False, drop_rate: float = 0.,
-                 lr=1e-5) -> None:
+                 lr=1e-5):
         super().__init__()
 
         self.learning_rate = lr
@@ -145,15 +147,19 @@ class ViT(L.LightningModule):
                                mlp_ratio = mlp_ratio,
                                drop_rate = drop_rate)
         
-        self.mlp_head = nn.Linear(emb_dim,num_classes)
+        self.mlp_head = nn.Sequential(
+            nn.LayerNorm(emb_dim),
+            nn.Linear(emb_dim, num_classes)
+        )
+        #self.mlp_head = nn.Linear(emb_dim,num_classes)
     
     def forward(self,x):
         x = self.patch(x)
 
         x = self.encoder(x)
 
-        x = self.mlp_head(x)
-        return F.softmax(x,dim=2)
+        x = self.mlp_head(x[:,0])
+        return F.softmax(x,dim=1)
     
 
     def training_step(self, batch, batch_nb: int):
@@ -163,7 +169,7 @@ class ViT(L.LightningModule):
         loss = F.cross_entropy(preds,y)
         
         return {'loss': loss, 'prediction': preds}
-    
+
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx):
         x, y = batch
@@ -181,7 +187,7 @@ class ViT(L.LightningModule):
     def test_step(self,batch: Tuple[torch.Tensor, torch.Tensor], batch_idx):
         x, y = batch
         logits = self(x)
-
+        
         test_loss = F.cross_entropy(logits, y)
         """
         metrics
@@ -194,13 +200,14 @@ class ViT(L.LightningModule):
 
     
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.parameters(), self.learning_rate,momentum=0.9)
-        scheduler = {
-            "scheduler": torch.optim.lr_scheduler.OneCycleLR(
-                optimizer=optimizer,
-                max_lr=1e-2,
-                epochs=self.trainer.max_epochs,
-                steps_per_epoch = 50000 // BATCH_SIZE),
-            "interval": "step"
-        }
-        return {"optimizer": optimizer, "lr_scheduler":  scheduler}
+        optimizer = torch.optim.Adam(self.parameters(), self.learning_rate)
+
+        # scheduler = {
+        #     "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #         optimizer=optimizer,patience=5),
+        #     "monitor": "val_loss"
+        # }
+
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
+        
+        return {"optimizer": optimizer, "lr_scheduler":scheduler}

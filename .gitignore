@@ -1,4 +1,6 @@
 /datasets/raw/c*
+/datasets/raw/f*
+/datasets/raw/s*
 nootebooks/wandb
 nootebooks/lightning_logs
 wandb
