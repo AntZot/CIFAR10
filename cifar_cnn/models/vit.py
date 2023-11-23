@@ -51,7 +51,7 @@ class MLP(nn.Module):
         self.drop = nn.Dropout(droput)
 
     def forward(self,x):
-        return self.drop(self.fc2(self.actv(self.fc1(x))))
+        return self.drop(self.fc2(self.drop(self.actv(self.fc1(x)))))
 
 
 class Attention(nn.Module):
@@ -73,10 +73,10 @@ class Attention(nn.Module):
         x = x.reshape((b,3,self.num_heads,e,-1))
         # b qkv heads e s 
         
-        att = F.softmax((x[:,0] @ x[:,1].transpose(2,3))*self.scale, dim=2)
+        att = F.softmax((x[:,0] @ x[:,1].transpose(2,3))*self.scale, dim=-1)
 
-        att = self.attn_drop(att @ x[:,2])
-        
+        att = self.attn_drop(att)
+        att = att @ x[:,2]
         #out = out.reshape(b,e,-1)
         att = rearrange(att, "b h n e -> b n (h e)")
 
@@ -123,7 +123,7 @@ class Encoder(nn.Module):
         return x
     
 
-#BATCH_SIZE = 48 if torch.cuda.is_available() else 16
+BATCH_SIZE = 64 if torch.cuda.is_available() else 16
 
 class ViT(L.LightningModule):
     def __init__(self, img_size: int, patch_size: int, num_classes: int, 
@@ -152,6 +152,10 @@ class ViT(L.LightningModule):
             nn.Linear(emb_dim, num_classes)
         )
         #self.mlp_head = nn.Linear(emb_dim,num_classes)
+
+    def _set_batch_and_dt_size(self,batch_size,size):
+        self.batch_size = batch_size
+        self.size = size
     
     def forward(self,x):
         x = self.patch(x)
@@ -159,7 +163,7 @@ class ViT(L.LightningModule):
         x = self.encoder(x)
 
         x = self.mlp_head(x[:,0])
-        return F.softmax(x,dim=1)
+        return x
     
 
     def training_step(self, batch, batch_nb: int):
@@ -167,6 +171,12 @@ class ViT(L.LightningModule):
 
         preds = self(x)
         loss = F.cross_entropy(preds,y)
+        """
+        metrics
+        """
+        acc = accuracy(preds, y, task="multiclass",num_classes=self.num_classes)
+        self.log("train_accuracy", acc, prog_bar=True)
+        self.log("train_loss", loss, prog_bar=True)
         
         return {'loss': loss, 'prediction': preds}
 
@@ -208,6 +218,14 @@ class ViT(L.LightningModule):
         #     "monitor": "val_loss"
         # }
 
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
-        
+        #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
+
+        scheduler = {
+            "scheduler": torch.optim.lr_scheduler.OneCycleLR(
+                optimizer=optimizer,
+                max_lr=2e-5,
+                epochs=self.trainer.max_epochs,
+                steps_per_epoch = self.trainer.num_training_batches),
+            "interval": "step"
+        }
         return {"optimizer": optimizer, "lr_scheduler":scheduler}

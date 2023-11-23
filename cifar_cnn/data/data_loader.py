@@ -13,14 +13,17 @@ BATCH_SIZE = 64 if torch.cuda.is_available() else 16
 class CIFAR10DataModule(L.LightningModule):
     def __init__(self, data_dir: str = PATH_DATASETS):
         super().__init__()
+        self.size = 50000
+        self.batch_size = BATCH_SIZE
         self.data_dir = data_dir
         self.transform = transforms.Compose(
             [
                 transforms.ToTensor(),
+                transforms.Resize(96),
                 transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5)) 
             ]
         )
-        self.dims = (3,32,32)
+        self.dims = (3,96,396)
         self.num_classes = 10
 
 
@@ -51,6 +54,7 @@ class CIFAR10DataModule(L.LightningModule):
 class STL10DataModule(L.LightningDataModule):
     def __init__(self, data_dir: str = PATH_DATASETS) -> None:
         super().__init__()
+        self.size = 5000
         self.batch_size = BATCH_SIZE
         self.data_dir = data_dir
         self.transform = transforms.Compose(
