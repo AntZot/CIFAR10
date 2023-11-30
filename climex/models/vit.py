@@ -131,7 +131,8 @@ class ViT(L.LightningModule):
                  mlp_ratio: int = 4, qkv_bias=False, drop_rate: float = 0.,
                  lr=1e-5):
         super().__init__()
-
+        
+        self.save_hyperparameters()
         self.learning_rate = lr
         self.num_classes = num_classes
         emb_dim = in_ch*patch_size**2
@@ -219,13 +220,12 @@ class ViT(L.LightningModule):
         # }
 
         #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
-
         scheduler = {
             "scheduler": torch.optim.lr_scheduler.OneCycleLR(
                 optimizer=optimizer,
                 max_lr=2e-5,
                 epochs=self.trainer.max_epochs,
-                steps_per_epoch = self.trainer.num_training_batches),
+                steps_per_epoch = self.trainer.train_dataloader),
             "interval": "step"
         }
         return {"optimizer": optimizer, "lr_scheduler":scheduler}

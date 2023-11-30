@@ -1,0 +1,20 @@
+datasets:
+  name: STL10
+  v_target_: climex.data.data_loader.STL10DataModule
+  batch_size: 64
+  train_val_test_split:
+  - 4500
+  - 500
+  - 800
+  num_workers: 0
+  pin_memory: false
+model:
+  name: ViT
+  class_name: climex.model.vit.ViT
+  params:
+    lr: 1.0e-05
+    patch_size: 16
+    mlp_ratio: 6
+    depth: 20
+    num_heads: 8
+    drop_rate: 0.0

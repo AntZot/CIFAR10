@@ -1,5 +1,5 @@
 from torch import nn
-from cifar_cnn.models.SKConv import SKConv
+from climex.models.SKConv import SKConv
 import torch.functional as F
 from typing import List, Optional
 

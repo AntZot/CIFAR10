@@ -1,0 +1,5 @@
+_target_: lightning.pytorch.loggers.wandb.WandbLogger
+name: wandb
+params:
+  offline: False
+  log_model: True

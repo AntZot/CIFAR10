@@ -1,0 +1,8 @@
+defaults:
+  - datasets: stl10
+  - model: vit
+#  - loger: wandb
+
+
+general:
+  device: cuda

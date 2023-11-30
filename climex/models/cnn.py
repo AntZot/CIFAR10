@@ -1,6 +1,6 @@
 from typing import Tuple
 from torch import nn
-from cifar_cnn.models.ResSKBlock import ResSKBlock
+from climex.models.ResSKBlock import ResSKBlock
 import torch
 import lightning as L
 from torchmetrics.functional import accuracy, auroc

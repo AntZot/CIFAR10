@@ -1,0 +1,4 @@
+name: CIFAR10
+v_target_: climex.data.data_loader.STL10DataModule
+#data_dir: ${paths.data_dir} 
+batch_size: 64

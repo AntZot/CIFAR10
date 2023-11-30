@@ -1,0 +1,10 @@
+
+name: ViT
+class_name: climex.model.vit.ViT
+params:
+  lr: 1e-5
+  patch_size: 16
+  mlp_ratio: 6
+  depth: 20
+  num_heads: 8
+  drop_rate: 0.
